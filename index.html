@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Racing Mobile Game</title>
+    <title>2D Car Racing Game</title>
     <style>
         * {
             box-sizing: border-box;
@@ -11,250 +11,117 @@
             -webkit-user-select: none;
             margin: 0;
             padding: 0;
-            touch-action: manipulation;
         }
-
         body {
-            background-color: #1a1a1a;
+            background-color: #222;
             color: #fff;
-            font-family: sans-serif;
+            font-family: Arial, sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             overflow: hidden;
         }
-
         #game-container {
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            max-width: 480px;
-            max-height: 850px;
-            background-color: #333;
-            display: flex;
-            flex-direction: column;
+            width: 320px;
+            height: 500px;
+            background: #555;
+            border: 4px solid #fff;
+            border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
-
         canvas {
-            width: 100%;
-            height: 100%;
             display: block;
-            background-color: #555;
+            background: #333;
         }
-
-        .top-ui {
+        #ui-overlay {
             position: absolute;
             top: 10px;
             left: 10px;
-            right: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
-        }
-
-        .stat-box {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px 12px;
-            border-radius: 8px;
+            font-size: 18px;
             font-weight: bold;
-            font-size: 14px;
-            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
         }
-
-        .btn-top {
-            background: rgba(255, 255, 255, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .overlay {
+        #start-screen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.88);
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 20;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .overlay h1 {
-            font-size: 30px;
-            margin-bottom: 10px;
-            color: #ff3366;
-        }
-
-        .overlay p {
-            font-size: 15px;
-            margin-bottom: 25px;
-            color: #ccc;
-        }
-
-        .btn-main {
-            background: #ff3366;
-            border: none;
-            color: white;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            width: 80%;
-            max-width: 250px;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: 25px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 25px;
             z-index: 10;
         }
-
-        .control-btn {
-            width: 75px;
-            height: 75px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
+        #start-screen h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #ffcc00;
+        }
+        .btn {
+            padding: 12px 24px;
+            font-size: 18px;
+            background: #ffcc00;
+            color: #000;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        /* Mobile Controls */
+        #controls {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
+            width: 320px;
+            margin-top: 15px;
+        }
+        .touch-btn {
+            width: 48%;
+            height: 60px;
+            background: #444;
+            color: #fff;
+            border: 2px solid #666;
+            border-radius: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
             align-items: center;
-            font-size: 32px;
-            color: white;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .touch-btn:active {
+            background: #666;
         }
     </style>
 </head>
 <body>
 
     <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-
-        <div class="top-ui">
-            <div class="stat-box">LEVEL: <span id="ui-level">1</span></div>
-            <div class="stat-box">SCORE: <span id="ui-score">0</span></div>
-            <button class="btn-top" id="btn-pause">⏸</button>
-        </div>
-
-        <div class="controls">
-            <div class="control-btn" id="btn-left">◀</div>
-            <div class="control-btn" id="btn-right">▶</div>
-        </div>
-
-        <!-- Start Screen -->
-        <div class="overlay" id="screen-start">
-            <h1>SPEED RACER 2D</h1>
-            <p>Eviter t-tobissat wa l-wirane bash t-fat l-levels!</p>
-            <button class="btn-main" id="btn-start">START GAME</button>
-        </div>
-
-        <!-- Pause Screen -->
-        <div class="overlay hidden" id="screen-pause">
-            <h1>PAUSED</h1>
-            <button class="btn-main" id="btn-resume">RESUME</button>
-        </div>
-
-        <!-- Game Over Screen -->
-        <div class="overlay hidden" id="screen-gameover">
-            <h1 style="color: #ff3333;">GAME OVER</h1>
-            <p>Score dyalek: <span id="final-score">0</span></p>
-            <button class="btn-main" id="btn-restart">RETRY</button>
-        </div>
-
-        <!-- Level Win Screen -->
-        <div class="overlay hidden" id="screen-levelwin">
-            <h1 style="color: #33ff66;">LEVEL COMPLETE!</h1>
-            <p>Nja7ti f Level <span id="win-level">1</span>!</p>
-            <button class="btn-main" id="btn-nextlevel">NEXT LEVEL</button>
+        <canvas id="gameCanvas" width="320" height="500"></canvas>
+        <div id="ui-overlay">Score: <span id="score">0</span></div>
+        <div id="start-screen">
+            <h1 id="screen-title">2D Car Racing</h1>
+            <p id="final-score" style="display:none; margin-bottom:10px;"></p>
+            <button class="btn" id="start-btn" onclick="startGame()">Start Game</button>
         </div>
     </div>
 
+    <!-- Mobile Touch Controls -->
+    <div id="controls">
+        <div class="touch-btn" id="left-btn">◀ LEFT</div>
+        <div class="touch-btn" id="right-btn">RIGHT ▶</div>
+    </div>
+
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const container = document.getElementById('game-container');
-
-        function resizeCanvas() {
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        let gameState = 'START'; 
-        let score = 0;
-        let level = 1;
-        let targetScore = 10;
-        let gameSpeed = 5;
-
-        const player = {
-            width: 40,
-            height: 70,
-            x: 0,
-            y: 0,
-            speed: 7,
-            movingLeft: false,
-            movingRight: false,
-            color: '#e74c3c'
-        };
-
-        let obstacles = [];
-        let roadOffset = 0;
-        let frameCount = 0;
-
-        const btnLeft = document.getElementById('btn-left');
-        const btnRight = document.getElementById('btn-right');
-
-        function addTouchEvents(elem, startFn, endFn) {
-            elem.addEventListener('touchstart', (e) => { e.preventDefault(); startFn(); }, {passive: false});
-            elem.addEventListener('touchend', (e) => { e.preventDefault(); endFn(); }, {passive: false});
-            elem.addEventListener('mousedown', startFn);
-            elem.addEventListener('mouseup', endFn);
-        }
-
-        addTouchEvents(btnLeft, () => player.movingLeft = true, () => player.movingLeft = false);
-        addTouchEvents(btnRight, () => player.movingRight = true, () => player.movingRight = false);
-
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a') player.movingLeft = true;
-            if (e.key === 'ArrowRight' || e.key === 'd') player.movingRight = true;
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a') player.movingLeft = false;
-            if (e.key === 'ArrowRight' || e.key === 'd') player.movingRight = false;
-        });
-
-        function initGame() {
-            resizeCanvas();
-            player.x = canvas.width / 2 - player.width / 2;
-            player.y = canvas.height - player.height - 30;
-            obstacles = [];
-            score = 0;
-            level = 1;
-            gameSpeed = 5;
-            targetScore = 10;
-            updateUI();
-        }
-
-        function startNextLevel() {
-            player.x = canvas.width / 2 - player.width / 2;
-            obstacles =
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("score");
+        const startScreen = document.getElementById("start-screen");
+        const
