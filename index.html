@@ -1,268 +1,813 @@
+```html
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2D Car Racing Game</title>
+    <title>Retro Turbo Racer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap');
+        
         * {
-            box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            background-color: #222;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-        #game-container {
-            position: relative;
-            width: 320px;
-            height: 500px;
-            background: #555;
-            border: 4px solid #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        }
-        canvas {
-            display: block;
-            background: #333;
-        }
-        #ui-overlay {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 1px 1px 2px #000;
-        }
-        /* Mobile Controls */
-        #controls {
-            display: flex;
-            justify-content: space-between;
-            width: 320px;
-            margin-top: 15px;
-        }
-        .touch-btn {
-            width: 48%;
-            height: 60px;
-            background: #444;
-            color: #fff;
-            border: 2px solid #666;
-            border-radius: 10px;
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             touch-action: manipulation;
         }
-        .touch-btn:active {
-            background: #666;
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0d0f18;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .arcade-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* Glassmorphism UI styling */
+        .glass-panel {
+            background: rgba(22, 27, 46, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .arcade-btn {
+            transition: all 0.1s ease;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.4);
+        }
+
+        .arcade-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+        }
+
+        /* Control touch feedback */
+        .control-btn {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            touch-action: none;
+        }
+
+        .control-btn:active, .control-btn.active {
+            background: rgba(255, 255, 255, 0.35);
+            border-color: #3b82f6;
+            transform: scale(0.95);
+        }
+
+        .nitro-btn:active, .nitro-btn.active {
+            background: rgba(239, 68, 68, 0.4);
+            border-color: #ef4444;
+        }
+
+        /* Scanline Arcade Overlay */
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.03),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.03)
+            );
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
         }
     </style>
 </head>
-<body>
+<body class="h-screen w-screen flex flex-col items-center justify-between p-2 sm:p-4 select-none">
 
-    <div id="game-container">
-        <canvas id="gameCanvas" width="320" height="500"></canvas>
-        <div id="ui-overlay">Score: <span id="score">0</span></div>
-    </div>
+    <!-- Header / HUD -->
+    <header class="w-full max-w-md flex justify-between items-center z-10 glass-panel rounded-2xl px-4 py-3 mb-2 shadow-lg">
+        <div class="flex flex-col">
+            <span class="text-xs text-gray-400 font-semibold tracking-wider">SCORE</span>
+            <span id="scoreText" class="arcade-font text-lg text-yellow-400">000000</span>
+        </div>
+        <div class="flex flex-col items-center">
+            <span class="text-xs text-gray-400 font-semibold tracking-wider">SPEED</span>
+            <div class="flex items-baseline space-x-1">
+                <span id="speedText" class="arcade-font text-xl text-cyan-400">0</span>
+                <span class="text-xs text-cyan-500 font-bold">KM/H</span>
+            </div>
+        </div>
+        <div class="flex flex-col items-end">
+            <span class="text-xs text-gray-400 font-semibold tracking-wider">COINS</span>
+            <div class="flex items-center space-x-1">
+                <i class="fas font-bold fa-coins text-yellow-400 text-sm"></i>
+                <span id="coinText" class="arcade-font text-lg text-yellow-300">0</span>
+            </div>
+        </div>
+    </header>
 
-    <!-- Mobile Touch Controls -->
-    <div id="controls">
-        <div class="touch-btn" id="left-btn">◀ LEFT</div>
-        <div class="touch-btn" id="right-btn">RIGHT ▶</div>
-    </div>
+    <!-- Game Canvas Wrapper -->
+    <main class="relative w-full max-w-md flex-1 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-700/50 flex items-center justify-center bg-gray-900">
+        <canvas id="gameCanvas" class="w-full h-full object-contain block"></canvas>
+        <div class="scanlines absolute inset-0"></div>
+
+        <!-- Start / Pause / Game Over Modals -->
+        <div id="uiOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+            <!-- Start Screen -->
+            <div id="startScreen" class="flex flex-col items-center space-y-5">
+                <div class="w-16 h-16 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-2 transform -rotate-6">
+                    <i class="fas fa-car-side text-3xl text-white"></i>
+                </div>
+                <h1 class="arcade-font text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 tracking-wider">
+                    TURBO RACER
+                </h1>
+                <p class="text-sm text-slate-300 max-w-xs">Dodge traffic, collect gold coins, and hit the nitro for extreme speeds!</p>
+                
+                <div class="glass-panel p-3 rounded-xl w-full text-xs text-slate-300 space-y-1 text-left">
+                    <p class="flex items-center"><i class="fas fa-trophy text-yellow-400 w-5"></i> High Score: <span id="startHighScore" class="arcade-font text-yellow-400 ml-2">0</span></p>
+                    <p class="flex items-center"><i class="fas fa-mobile-alt text-cyan-400 w-5"></i> Tilt steering: <span id="gyroStatus" class="ml-2 text-gray-400">Disabled</span></p>
+                </div>
+
+                <button id="startBtn" class="arcade-btn w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl arcade-font text-sm tracking-wider flex items-center justify-center space-x-2">
+                    <i class="fas fa-play text-xs"></i>
+                    <span>START RACE</span>
+                </button>
+                
+                <button id="enableGyroBtn" class="text-xs text-cyan-400 underline opacity-80 hover:opacity-100 hidden">
+                    Enable Motion Steering
+                </button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="flex flex-col items-center space-y-4 hidden">
+                <div class="w-16 h-16 bg-red-500/20 border-2 border-red-500 rounded-full flex items-center justify-center animate-bounce">
+                    <i class="fas fa-car-crash text-3xl text-red-500"></i>
+                </div>
+                <h2 class="arcade-font text-2xl text-red-500">CRASHED!</h2>
+                
+                <div class="glass-panel p-4 rounded-xl w-full max-w-xs space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Final Score</span>
+                        <span id="finalScore" class="arcade-font text-yellow-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Coins Collected</span>
+                        <span id="finalCoins" class="arcade-font text-yellow-300">0</span>
+                    </div>
+                    <div class="border-t border-slate-700 my-1 pt-1 flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Best Score</span>
+                        <span id="bestScore" class="arcade-font text-emerald-400">0</span>
+                    </div>
+                </div>
+
+                <button id="restartBtn" class="arcade-btn w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl arcade-font text-sm tracking-wider flex items-center justify-center space-x-2">
+                    <i class="fas fa-redo text-xs"></i>
+                    <span>PLAY AGAIN</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Controls Bar -->
+    <footer class="w-full max-w-md my-2 px-1 grid grid-cols-4 gap-2 z-10 h-24">
+        <!-- Steering Left -->
+        <button id="btnLeft" class="control-btn rounded-2xl flex items-center justify-center text-white text-2xl active:bg-cyan-500/30">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <!-- Steering Right -->
+        <button id="btnRight" class="control-btn rounded-2xl flex items-center justify-center text-white text-2xl active:bg-cyan-500/30">
+            <i class="fas fa-arrow-right"></i>
+        </button>
+        <!-- Brake -->
+        <button id="btnBrake" class="control-btn rounded-2xl flex flex-col items-center justify-center text-amber-400 text-lg active:bg-amber-500/30">
+            <i class="fas fa-angle-down text-2xl"></i>
+            <span class="text-[9px] font-bold tracking-widest mt-1">BRAKE</span>
+        </button>
+        <!-- Nitro/Accelerate -->
+        <button id="btnNitro" class="control-btn nitro-btn rounded-2xl flex flex-col items-center justify-center text-red-500 text-lg active:bg-red-500/30">
+            <i class="fas fa-bolt text-2xl"></i>
+            <span class="text-[9px] font-bold tracking-widest mt-1">NITRO</span>
+        </button>
+    </footer>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const scoreElement = document.getElementById("score");
+        // Web Audio API Synthesizer for Retro SFX
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.engineOsc = null;
+                this.engineGain = null;
+                this.isMuted = false;
+            }
 
-        let score = 0;
-        let gameSpeed = 5;
-        let isGameOver = false;
+            init() {
+                if (this.ctx) return;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+            }
 
-        // Player Car
-        const player = {
-            x: 135,
-            y: 400,
-            width: 50,
-            height: 80,
-            speed: 6,
-            dx: 0
+            startEngineSound() {
+                if (!this.ctx || this.engineOsc) return;
+                
+                try {
+                    this.engineOsc = this.ctx.createOscillator();
+                    this.engineGain = this.ctx.createGain();
+
+                    this.engineOsc.type = 'sawtooth';
+                    this.engineOsc.frequency.setValueAtTime(40, this.ctx.currentTime);
+
+                    // Lowpass filter to muffle engine sound comfortably
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(300, this.ctx.currentTime);
+
+                    this.engineGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+
+                    this.engineOsc.connect(filter);
+                    filter.connect(this.engineGain);
+                    this.engineGain.connect(this.ctx.destination);
+
+                    this.engineOsc.start();
+                } catch(e) { console.log(e); }
+            }
+
+            updateEnginePitch(speedRatio) {
+                if (!this.engineOsc || !this.ctx) return;
+                const targetFreq = 40 + (speedRatio * 160);
+                this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.05);
+            }
+
+            stopEngineSound() {
+                if (this.engineOsc) {
+                    try {
+                        this.engineOsc.stop();
+                        this.engineOsc.disconnect();
+                    } catch(e) {}
+                    this.engineOsc = null;
+                }
+            }
+
+            playCoinSFX() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, this.ctx.currentTime); // B5
+                osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08); // E6
+
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playCrashSFX() {
+                if (!this.ctx) return;
+                // White noise buffer generator for crash effect
+                const bufferSize = this.ctx.sampleRate * 0.5;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.5);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start();
+                noise.stop(this.ctx.currentTime + 0.5);
+            }
+        }
+
+        const audio = new SoundEngine();
+    </script>
+
+    <script>
+        // DOM Elements setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreText = document.getElementById('scoreText');
+        const speedText = document.getElementById('speedText');
+        const coinText = document.getElementById('coinText');
+        
+        const uiOverlay = document.getElementById('uiOverlay');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const enableGyroBtn = document.getElementById('enableGyroBtn');
+        const gyroStatus = document.getElementById('gyroStatus');
+
+        const finalScore = document.getElementById('finalScore');
+        const finalCoins = document.getElementById('finalCoins');
+        const bestScore = document.getElementById('bestScore');
+        const startHighScore = document.getElementById('startHighScore');
+
+        // Control Buttons
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnBrake = document.getElementById('btnBrake');
+        const btnNitro = document.getElementById('btnNitro');
+
+        // Internal Game State Constants
+        const CANVAS_WIDTH = 400;
+        const CANVAS_HEIGHT = 700;
+        const ROAD_WIDTH = 280;
+        const LANE_COUNT = 3;
+        const LANE_WIDTH = ROAD_WIDTH / LANE_COUNT;
+        const ROAD_LEFT = (CANVAS_WIDTH - ROAD_WIDTH) / 2;
+
+        // Player State
+        let player = {
+            x: CANVAS_WIDTH / 2 - 20,
+            y: CANVAS_HEIGHT - 130,
+            width: 40,
+            height: 70,
+            speed: 0,
+            maxSpeed: 180,
+            normalMaxSpeed: 140,
+            nitroMaxSpeed: 220,
+            acceleration: 0.8,
+            friction: 0.96,
+            steerSpeed: 5.5,
+            vx: 0,
+            tilt: 0
         };
 
-        // Enemy Cars
-        let enemies = [];
+        // Game Environment & Logic
+        let gameActive = false;
+        let score = 0;
+        let coinsCount = 0;
+        let roadOffset = 0;
+        let traffic = [];
+        let coins = [];
+        let particles = [];
+        let highScore = parseInt(localStorage.getItem('retro_racer_highscore') || '0');
 
-        // Road Lines Animation
-        let lineOffsetY = 0;
+        // Input Tracking Flags
+        const inputs = {
+            left: false,
+            right: false,
+            brake: false,
+            nitro: false,
+            gyroGamma: 0
+        };
 
-        function drawPlayer() {
-            ctx.fillStyle = "#e74c3c"; // Red Car
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+        let gyroEnabled = false;
+
+        // Resize Canvas Internal Resolution while maintaining responsive layout
+        function resizeCanvas() {
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+        }
+        resizeCanvas();
+
+        // Display saved high score initially
+        startHighScore.textContent = String(highScore).padStart(6, '0');
+
+        // Control listeners helper
+        function setupButton(element, key) {
+            const start = (e) => {
+                e.preventDefault();
+                inputs[key] = true;
+                element.classList.add('active');
+            };
+            const end = (e) => {
+                e.preventDefault();
+                inputs[key] = false;
+                element.classList.remove('active');
+            };
+
+            element.addEventListener('touchstart', start, { passive: false });
+            element.addEventListener('touchend', end, { passive: false });
+            element.addEventListener('mousedown', start);
+            element.addEventListener('mouseup', end);
+            element.addEventListener('mouseleave', end);
+        }
+
+        setupButton(btnLeft, 'left');
+        setupButton(btnRight, 'right');
+        setupButton(btnBrake, 'brake');
+        setupButton(btnNitro, 'nitro');
+
+        // Keyboard Controls Fallback
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') inputs.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') inputs.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w') inputs.nitro = true;
+            if (e.key === 'ArrowDown' || e.key === 's') inputs.brake = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') inputs.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') inputs.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w') inputs.nitro = false;
+            if (e.key === 'ArrowDown' || e.key === 's') inputs.brake = false;
+        });
+
+        // Optional Gyroscope Setup
+        function handleOrientation(e) {
+            if (!gyroEnabled) return;
+            // Gamma is left to right tilt in degrees [-90 to 90]
+            if (e.gamma !== null) {
+                inputs.gyroGamma = e.gamma;
+            }
+        }
+
+        if (window.DeviceOrientationEvent) {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                enableGyroBtn.classList.remove('hidden');
+                enableGyroBtn.addEventListener('click', () => {
+                    DeviceOrientationEvent.requestPermission().then(state => {
+                        if (state === 'granted') {
+                            gyroEnabled = true;
+                            window.addEventListener('deviceorientation', handleOrientation);
+                            gyroStatus.textContent = 'Active';
+                            gyroStatus.className = 'ml-2 text-emerald-400 font-bold';
+                            enableGyroBtn.classList.add('hidden');
+                        }
+                    }).catch(console.error);
+                });
+            } else {
+                gyroEnabled = true;
+                window.addEventListener('deviceorientation', handleOrientation);
+                gyroStatus.textContent = 'Active';
+                gyroStatus.className = 'ml-2 text-emerald-400 font-bold';
+            }
+        }
+
+        // Traffic Spawning
+        function spawnTraffic() {
+            const laneIndex = Math.floor(Math.random() * LANE_COUNT);
+            const laneX = ROAD_LEFT + (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2) - 20;
             
+            // Prevent spawning right on top of another traffic car
+            const tooClose = traffic.some(car => Math.abs(car.y - (-100)) < 160 && car.lane === laneIndex);
+            if (!tooClose) {
+                const colors = ['#e11d48', '#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#64748b'];
+                const carColor = colors[Math.floor(Math.random() * colors.length)];
+                traffic.push({
+                    x: laneX,
+                    y: -100,
+                    width: 40,
+                    height: 70,
+                    speed: Math.random() * 2 + 2,
+                    color: carColor,
+                    lane: laneIndex
+                });
+            }
+        }
+
+        // Coin Spawning
+        function spawnCoin() {
+            const laneIndex = Math.floor(Math.random() * LANE_COUNT);
+            const laneX = ROAD_LEFT + (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2);
+            
+            coins.push({
+                x: laneX,
+                y: -40,
+                radius: 12,
+                rotation: 0
+            });
+        }
+
+        // Particle System for Nitro/Exhaust
+        function createExhaustParticle() {
+            particles.push({
+                x: player.x + player.width / 2 + (Math.random() * 10 - 5),
+                y: player.y + player.height,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: Math.random() * 3 + 2,
+                size: inputs.nitro ? Math.random() * 8 + 4 : Math.random() * 4 + 2,
+                color: inputs.nitro ? '#ef4444' : '#64748b',
+                alpha: 1
+            });
+        }
+
+        // Draw Curved/Styled Top-Down Car
+        function drawCar(x, y, width, height, mainColor, isPlayer = false, tilt = 0) {
+            ctx.save();
+            ctx.translate(x + width / 2, y + height / 2);
+            ctx.rotate(tilt * Math.PI / 180);
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.fillRect(-width / 2 + 4, -height / 2 + 6, width, height);
+
             // Wheels
-            ctx.fillStyle = "#000";
-            ctx.fillRect(player.x - 4, player.y + 10, 5, 18);
-            ctx.fillRect(player.x + player.width - 1, player.y + 10, 5, 18);
-            ctx.fillRect(player.x - 4, player.y + 50, 5, 18);
-            ctx.fillRect(player.x + player.width - 1, player.y + 50, 5, 18);
-        }
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-width / 2 - 3, -height / 2 + 8, 5, 14); // Front Left
+            ctx.fillRect(width / 2 - 2, -height / 2 + 8, 5, 14);  // Front Right
+            ctx.fillRect(-width / 2 - 3, height / 2 - 22, 5, 14); // Rear Left
+            ctx.fillRect(width / 2 - 2, height / 2 - 22, 5, 14);  // Rear Right
 
-        function drawEnemies() {
-            ctx.fillStyle = "#3498db"; // Blue Cars
-            enemies.forEach(enemy => {
-                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-                
-                // Wheels
-                ctx.fillStyle = "#000";
-                ctx.fillRect(enemy.x - 4, enemy.y + 10, 5, 18);
-                ctx.fillRect(enemy.x + enemy.width - 1, enemy.y + 10, 5, 18);
-                ctx.fillRect(enemy.x - 4, enemy.y + 50, 5, 18);
-                ctx.fillRect(enemy.x + enemy.width - 1, enemy.y + 50, 5, 18);
-                ctx.fillStyle = "#3498db";
-            });
-        }
-
-        function drawRoad() {
-            // Road background
-            ctx.fillStyle = "#333";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Sidewalks
-            ctx.fillStyle = "#2ecc71";
-            ctx.fillRect(0, 0, 15, canvas.height);
-            ctx.fillRect(canvas.width - 15, 0, 15, canvas.height);
-
-            // Middle dashed line
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 4;
-            ctx.setLineDash([20, 20]);
-            ctx.lineDashOffset = -lineOffsetY;
+            // Main Body
+            ctx.fillStyle = mainColor;
             ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
-            ctx.stroke();
-        }
+            ctx.roundRect(-width / 2, -height / 2, width, height, 8);
+            ctx.fill();
 
-        function spawnEnemy() {
-            if (Math.random() < 0.03 && enemies.length < 3) {
-                const laneX = [25, 135, 245];
-                const randomX = laneX[Math.floor(Math.random() * laneX.length)];
-                
-                const canSpawn = enemies.every(e => e.y > 100);
-                if (canSpawn) {
-                    enemies.push({
-                        x: randomX,
-                        y: -100,
-                        width: 50,
-                        height: 80,
-                        speed: gameSpeed + Math.random() * 2
-                    });
-                }
+            // Roof / Windshield Overlay
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-width / 2 + 4, -height / 2 + 18, width - 8, height - 36);
+
+            // Glass/Windshield
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.roundRect(-width / 2 + 6, -height / 2 + 20, width - 12, 12, 3); // Front
+            ctx.roundRect(-width / 2 + 6, height / 2 - 26, width - 12, 8, 2);  // Rear
+            ctx.fill();
+
+            // Headlights
+            ctx.fillStyle = isPlayer ? '#fef08a' : '#fee2e2';
+            ctx.fillRect(-width / 2 + 4, -height / 2 + 2, 8, 4);
+            ctx.fillRect(width / 2 - 12, -height / 2 + 2, 8, 4);
+
+            // Tail Lights
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(-width / 2 + 4, height / 2 - 4, 8, 3);
+            ctx.fillRect(width / 2 - 12, height / 2 - 4, 8, 3);
+
+            // Racing Stripe for Player
+            if (isPlayer) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-3, -height / 2, 6, height);
             }
+
+            ctx.restore();
         }
 
-        function moveEnemies() {
-            enemies.forEach((enemy, index) => {
-                enemy.y += enemy.speed;
+        // Draw Environment & Highway
+        function drawRoad() {
+            // Grass Margins
+            ctx.fillStyle = '#052e16';
+            ctx.fillRect(0, 0, ROAD_LEFT, CANVAS_HEIGHT);
+            ctx.fillRect(ROAD_LEFT + ROAD_WIDTH, 0, ROAD_LEFT, CANVAS_HEIGHT);
 
-                // Check Collision
+            // Road Asphalt
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(ROAD_LEFT, 0, ROAD_WIDTH, CANVAS_HEIGHT);
+
+            // Red-White Curb Borders
+            const curbHeight = 30;
+            const curbOffset = roadOffset % (curbHeight * 2);
+            for (let y = -curbHeight * 2; y < CANVAS_HEIGHT + curbHeight * 2; y += curbHeight) {
+                const isRed = Math.floor((y - curbOffset) / curbHeight) % 2 === 0;
+                ctx.fillStyle = isRed ? '#ef4444' : '#ffffff';
+                ctx.fillRect(ROAD_LEFT - 8, y + curbOffset, 8, curbHeight);
+                ctx.fillRect(ROAD_LEFT + ROAD_WIDTH, y + curbOffset, 8, curbHeight);
+            }
+
+            // Lane Dividers (Dashed White Lines)
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([25, 25]);
+            ctx.lineDashOffset = -roadOffset;
+
+            for (let i = 1; i < LANE_COUNT; i++) {
+                ctx.beginPath();
+                ctx.moveTo(ROAD_LEFT + i * LANE_WIDTH, -50);
+                ctx.lineTo(ROAD_LEFT + i * LANE_WIDTH, CANVAS_HEIGHT + 50);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]); // Reset dash state
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            // Handle Speeds & Acceleration
+            let targetMaxSpeed = inputs.nitro ? player.nitroMaxSpeed : player.normalMaxSpeed;
+            if (inputs.brake) targetMaxSpeed = 40;
+
+            if (player.speed < targetMaxSpeed) {
+                player.speed += player.acceleration;
+            } else if (player.speed > targetMaxSpeed) {
+                player.speed -= player.acceleration * 2;
+            }
+
+            // Update Engine Audio Pitch
+            audio.updateEnginePitch(player.speed / player.nitroMaxSpeed);
+
+            // Steering Input calculation (Buttons + Gyro)
+            let moveDir = 0;
+            if (inputs.left) moveDir -= 1;
+            if (inputs.right) moveDir += 1;
+
+            if (gyroEnabled && Math.abs(inputs.gyroGamma) > 3) {
+                moveDir += Math.max(-1, Math.min(1, inputs.gyroGamma / 20));
+            }
+
+            player.vx = moveDir * player.steerSpeed;
+            player.x += player.vx;
+            player.tilt = moveDir * 8; // Visual steering angle roll
+
+            // Clamp Player to Road Boundaries
+            if (player.x < ROAD_LEFT + 10) {
+                player.x = ROAD_LEFT + 10;
+                player.speed *= 0.95; // Rough curb slowdown
+            }
+            if (player.x + player.width > ROAD_LEFT + ROAD_WIDTH - 10) {
+                player.x = ROAD_LEFT + ROAD_WIDTH - 10 - player.width;
+                player.speed *= 0.95;
+            }
+
+            // Scroll Road according to Player Speed
+            const roadSpeed = player.speed * 0.12;
+            roadOffset += roadSpeed;
+
+            // Score Increment
+            score += Math.floor(player.speed * 0.05);
+            scoreText.textContent = String(score).padStart(6, '0');
+            speedText.textContent = Math.floor(player.speed);
+
+            // Spawn Particles
+            if (Math.random() < 0.6) createExhaustParticle();
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.y += roadSpeed * 0.5;
+                p.x += p.vx;
+                p.alpha -= 0.03;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Spawn & Update Traffic Vehicles
+            if (Math.random() < 0.025) spawnTraffic();
+
+            for (let i = traffic.length - 1; i >= 0; i--) {
+                const car = traffic[i];
+                // Traffic moves relative to player speed
+                car.y += roadSpeed - car.speed;
+
+                // Collision Detection (Box AABB with inset tolerance)
+                const margin = 5;
                 if (
-                    player.x < enemy.x + enemy.width &&
-                    player.x + player.width > enemy.x &&
-                    player.y < enemy.y + enemy.height &&
-                    player.y + player.height > enemy.y
+                    player.x + margin < car.x + car.width - margin &&
+                    player.x + player.width - margin > car.x + margin &&
+                    player.y + margin < car.y + car.height - margin &&
+                    player.y + player.height - margin > car.y + margin
                 ) {
-                    resetGame(); // Restart immediately when crash occurs
+                    gameOver();
+                    return;
                 }
 
-                // Remove offscreen enemies and add score
-                if (enemy.y > canvas.height) {
-                    enemies.splice(index, 1);
-                    score += 10;
-                    scoreElement.innerText = score;
-                    if (score % 50 === 0) gameSpeed += 0.5;
+                // Remove offscreen traffic
+                if (car.y > CANVAS_HEIGHT + 100 || car.y < -200) {
+                    traffic.splice(i, 1);
                 }
-            });
-        }
+            }
 
-        function updatePlayer() {
-            player.x += player.dx;
+            // Spawn & Update Gold Coins
+            if (Math.random() < 0.015) spawnCoin();
 
-            // Boundaries
-            if (player.x < 20) player.x = 20;
-            if (player.x + player.width > canvas.width - 20) {
-                player.x = canvas.width - 20 - player.width;
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const coin = coins[i];
+                coin.y += roadSpeed;
+                coin.rotation += 0.1;
+
+                // Circle to Rect Collision with player
+                const distX = Math.abs(coin.x - (player.x + player.width / 2));
+                const distY = Math.abs(coin.y - (player.y + player.height / 2));
+
+                if (distX < (player.width / 2 + coin.radius) && distY < (player.height / 2 + coin.radius)) {
+                    // Picked up coin
+                    coinsCount++;
+                    score += 250;
+                    coinText.textContent = coinsCount;
+                    audio.playCoinSFX();
+                    coins.splice(i, 1);
+                    continue;
+                }
+
+                // Remove offscreen coins
+                if (coin.y > CANVAS_HEIGHT + 50) {
+                    coins.splice(i, 1);
+                }
             }
         }
 
-        function updateGame() {
-            lineOffsetY += gameSpeed;
-            if (lineOffsetY > 40) lineOffsetY = 0;
+        function render() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+            // Draw Road
             drawRoad();
-            drawPlayer();
-            drawEnemies();
 
-            updatePlayer();
-            moveEnemies();
-            spawnEnemy();
+            // Draw Exhaust Particles
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
 
-            requestAnimationFrame(updateGame);
+            // Draw Gold Coins
+            coins.forEach(coin => {
+                ctx.save();
+                ctx.translate(coin.x, coin.y);
+                ctx.scale(Math.sin(coin.rotation), 1); // 3D Coin flip effect
+                
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(0, 0, coin.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(0, 0, coin.radius - 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            });
+
+            // Draw Traffic Cars
+            traffic.forEach(car => {
+                drawCar(car.x, car.y, car.width, car.height, car.color);
+            });
+
+            // Draw Player Car
+            drawCar(player.x, player.y, player.width, player.height, '#2563eb', true, player.tilt);
         }
 
-        function resetGame() {
+        // Master Game Loop
+        function gameLoop() {
+            update();
+            render();
+            if (gameActive) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function startGame() {
+            audio.init();
+            audio.startEngineSound();
+
+            // Reset States
             score = 0;
-            gameSpeed = 5;
-            enemies = [];
-            player.x = 135;
-            scoreElement.innerText = score;
+            coinsCount = 0;
+            traffic = [];
+            coins = [];
+            particles = [];
+            player.x = CANVAS_WIDTH / 2 - player.width / 2;
+            player.speed = 0;
+
+            scoreText.textContent = '000000';
+            coinText.textContent = '0';
+            speedText.textContent = '0';
+
+            gameActive = true;
+            uiOverlay.classList.add('hidden');
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+
+            requestAnimationFrame(gameLoop);
         }
 
-        // --- Controls (Keyboard & Touch) ---
-        
-        const leftBtn = document.getElementById("left-btn");
-        const rightBtn = document.getElementById("right-btn");
+        function gameOver() {
+            gameActive = false;
+            audio.stopEngineSound();
+            audio.playCrashSFX();
 
-        leftBtn.addEventListener("touchstart", (e) => { e.preventDefault(); player.dx = -player.speed; });
-        leftBtn.addEventListener("touchend", (e) => { e.preventDefault(); player.dx = 0; });
+            // Save High Score in localStorage
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('retro_racer_highscore', highScore.toString());
+            }
 
-        rightBtn.addEventListener("touchstart", (e) => { e.preventDefault(); player.dx = player.speed; });
-        rightBtn.addEventListener("touchend", (e) => { e.preventDefault(); player.dx = 0; });
+            finalScore.textContent = String(score).padStart(6, '0');
+            finalCoins.textContent = coinsCount;
+            bestScore.textContent = String(highScore).padStart(6, '0');
 
-        leftBtn.addEventListener("mousedown", () => player.dx = -player.speed);
-        leftBtn.addEventListener("mouseup", () => player.dx = 0);
-        rightBtn.addEventListener("mousedown", () => player.dx = player.speed);
-        rightBtn.addEventListener("mouseup", () => player.dx = 0);
+            uiOverlay.classList.remove('hidden');
+            gameOverScreen.classList.remove('hidden');
+        }
 
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "ArrowLeft" || e.key === "a") player.dx = -player.speed;
-            if (e.key === "ArrowRight" || e.key === "d") player.dx = player.speed;
-        });
+        // Button Event Listeners
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
 
-        document.addEventListener("keyup", (e) => {
-            if (["ArrowLeft", "ArrowRight", "a", "d"].includes(e.key)) player.dx = 0;
-        });
-
-        // Start game immediately on page load
-        resetGame();
-        requestAnimationFrame(updateGame);
+        // Render initial static scene behind menu
+        drawRoad();
+        drawCar(player.x, player.y, player.width, player.height, '#2563eb', true, 0);
     </script>
 </body>
 </html>
+```
