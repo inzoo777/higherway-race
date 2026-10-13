@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"><title>Highway Racer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:10px;background:#173b25;color:#fff;text-align:center;font-family:Arial;min-height:100dvh;display:flex;flex-direction:column;align-items:center;touch-action:manipulation}h1{font-size:clamp(22px,6vw,32px);margin:8px}#distance{margin:4px 0 10px;font-weight:bold}
+canvas{width:min(94vw,360px,62dvh);height:auto;max-height:65dvh;display:block;border:2px solid #d9f5df;border-radius:10px;touch-action:none}
+.controls{display:flex;gap:12px;width:min(94vw,360px);margin:12px auto 0}button{flex:1;min-height:58px;font-size:20px;font-weight:bold;border:0;border-radius:14px;background:#f4f4f4;color:#153c27;touch-action:manipulation;user-select:none;-webkit-user-select:none}button:active{background:#bcecc7}#restart{width:min(94vw,360px);margin-top:8px;min-height:44px;font-size:16px}.note{font-size:12px;color:#d9f5df;margin:8px}
+</style></head><body><h1>🚘 HIGHWAY RACER</h1><div id="distance">Distance: 0 m</div>
+<canvas id="game" width="360" height="550"></canvas>
+<div class="controls"><button id="left">⬅ LEFT</button><button id="right">RIGHT ➡</button></div><button id="restart">↻ RESTART</button><div class="note">Dodge traffic with touch controls or keyboard arrows.</div>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');let lane=1,traffic=[],distance=0,dead=false,frame=0,last=0;
+const xs=[65,160,255];
+function reset(){lane=1;traffic=[];distance=0;dead=false;frame=0;document.getElementById('distance').textContent='Distance: 0 m'}
+function steer(d){if(!dead)lane=Math.max(0,Math.min(2,lane+d))}
+document.getElementById('left').addEventListener('pointerdown',e=>{e.preventDefault();steer(-1)});
+document.getElementById('right').addEventListener('pointerdown',e=>{e.preventDefault();steer(1)});
+document.getElementById('restart').addEventListener('click',reset);
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')steer(-1);if(e.key==='ArrowRight')steer(1)});
+function drawCar(x,y,color){ctx.fillStyle=color;ctx.fillRect(x,y,38,58);ctx.fillStyle='#dceeff';ctx.fillRect(x+6,y+8,26,15);ctx.fillStyle='#171717';ctx.fillRect(x+3,y+44,8,10);ctx.fillRect(x+27,y+44,8,10)}
+function loop(t){requestAnimationFrame(loop);if(t-last<16)return;last=t;ctx.clearRect(0,0,360,550);ctx.fillStyle='#26723a';ctx.fillRect(0,0,360,550);ctx.fillStyle='#454545';ctx.fillRect(35,0,290,550);
+ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.setLineDash([34,25]);ctx.lineDashOffset=-(frame%59);ctx.beginPath();ctx.moveTo(132,0);ctx.lineTo(132,550);ctx.moveTo(228,0);ctx.lineTo(228,550);ctx.stroke();ctx.setLineDash([]);
+if(!dead){frame++;if(frame%55===0)traffic.push({lane:Math.floor(Math.random()*3),y:-65,s:3+Math.min(4,distance/500)});traffic.forEach(v=>v.y+=v.s);traffic=traffic.filter(v=>v.y<570);distance++;for(const v of traffic)if(v.lane===lane&&v.y<498&&v.y+58>440)dead=true;document.getElementById('distance').textContent='Distance: '+Math.floor(distance/5)+' m'}
+traffic.forEach(v=>drawCar(xs[v.lane],v.y,'#ff9d36'));drawCar(xs[lane],440,'#25b7ff');
+if(dead){ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(35,220,290,110);ctx.fillStyle='white';ctx.textAlign='center';ctx.font='bold 27px Arial';ctx.fillText('CRASH!',180,265);ctx.font='16px Arial';ctx.fillText('Tap RESTART to try again',180,295);ctx.textAlign='start'}
+}reset();loop(0);
+</script></body></html>
